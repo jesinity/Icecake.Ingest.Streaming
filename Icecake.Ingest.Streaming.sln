@@ -1,0 +1,28 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Icecake.Ingest.Streaming", "Icecake.Ingest.Streaming\Icecake.Ingest.Streaming.csproj", "{01DD2EB9-6DCD-4127-8E86-AE8B28253BD5}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Icecake.Ingest.Streaming.App", "Icecake.Ingest.Streaming.App\Icecake.Ingest.Streaming.App.csproj", "{11960A67-99E8-4F2C-A847-93BF6F49568B}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Icecake.Ingest.Streaming.Services", "Icecake.Ingest.Streaming.Services\Icecake.Ingest.Streaming.Services.csproj", "{F3B9CCD6-5CC3-4916-BA2B-FE0EE143DA30}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{01DD2EB9-6DCD-4127-8E86-AE8B28253BD5}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{01DD2EB9-6DCD-4127-8E86-AE8B28253BD5}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{01DD2EB9-6DCD-4127-8E86-AE8B28253BD5}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{01DD2EB9-6DCD-4127-8E86-AE8B28253BD5}.Release|Any CPU.Build.0 = Release|Any CPU
+		{11960A67-99E8-4F2C-A847-93BF6F49568B}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{11960A67-99E8-4F2C-A847-93BF6F49568B}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{11960A67-99E8-4F2C-A847-93BF6F49568B}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{11960A67-99E8-4F2C-A847-93BF6F49568B}.Release|Any CPU.Build.0 = Release|Any CPU
+		{F3B9CCD6-5CC3-4916-BA2B-FE0EE143DA30}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{F3B9CCD6-5CC3-4916-BA2B-FE0EE143DA30}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{F3B9CCD6-5CC3-4916-BA2B-FE0EE143DA30}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{F3B9CCD6-5CC3-4916-BA2B-FE0EE143DA30}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+EndGlobal

@@ -1,0 +1,37 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+    <PropertyGroup>
+        <TargetFrameworks>net8.0;netstandard2.0</TargetFrameworks>
+        <ImplicitUsings>enable</ImplicitUsings>
+        <Nullable>enable</Nullable>
+        <LangVersion>12</LangVersion>
+        <Version>0.0.1</Version>
+
+        <PackageId>Icecake.Ingest.Streaming</PackageId>
+        <Authors>Jesinity</Authors>        
+        <Description>Streaming ingestion API for Snowflake Snowpipe Streaming.</Description>
+        <PackageTags>icecake;icecake streaming;snowflake;snowpipe;streaming;ingest</PackageTags>
+        <PackageLicenseExpression>MIT</PackageLicenseExpression>
+        <PackageProjectUrl>https://github.com/jesinity/Icecake.Ingest.Streaming</PackageProjectUrl>
+        <RepositoryUrl>https://github.com/jesinity/Icecake.Ingest.Streaming.git</RepositoryUrl>
+        <RepositoryType>git</RepositoryType>        
+        <PackageReadmeFile>README.md</PackageReadmeFile>
+        <PackageIcon>icon.png</PackageIcon>
+        
+    </PropertyGroup>
+
+    <ItemGroup>
+        <None Include="../README.md" Pack="true" PackagePath="" />
+    </ItemGroup>
+
+    <ItemGroup>
+        <None Include="../icon.png" Pack="true" PackagePath="\" />
+    </ItemGroup>
+
+    <ItemGroup>
+      <PackageReference Include="BouncyCastle.Cryptography" Version="2.6.2" />
+      <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" Version="9.0.10" />
+      <PackageReference Include="Snowflake.Data" Version="4.8.0" />
+    </ItemGroup>
+
+</Project>

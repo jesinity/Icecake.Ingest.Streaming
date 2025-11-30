@@ -1,0 +1,6 @@
+/.idea/
+obj
+bin
+.DS_Store
+
+Icecake.Ingest.Streaming.sln.DotSettings.user

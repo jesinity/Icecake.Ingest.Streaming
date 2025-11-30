@@ -1,0 +1,42 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+    <PropertyGroup>
+        <TargetFrameworks>net8.0;netstandard2.0</TargetFrameworks>
+        <ImplicitUsings>enable</ImplicitUsings>
+        <Nullable>enable</Nullable>
+        <LangVersion>12</LangVersion>
+        <Version>0.0.1</Version>
+
+        <PackageId>Icecake.Ingest.Streaming.Services</PackageId>
+        <Authors>Jesinity</Authors>
+        <Description>DI extensions to add core components of Icecake ingest streaming package</Description>
+        <PackageTags>icecake;icecake streaming;snowflake;snowpipe;streaming;ingest</PackageTags>
+        <PackageLicenseExpression>MIT</PackageLicenseExpression>
+        <PackageProjectUrl>https://github.com/jesinity/Icecake.Ingest.Streaming</PackageProjectUrl>
+        <RepositoryUrl>https://github.com/jesinity/Icecake.Ingest.Streaming.git</RepositoryUrl>
+        <RepositoryType>git</RepositoryType>
+        <PackageReadmeFile>README.md</PackageReadmeFile>
+        <PackageIcon>icon.png</PackageIcon>
+    </PropertyGroup>
+
+    <ItemGroup>
+        <None Include="../README.md" Pack="true" PackagePath="" />
+    </ItemGroup>
+
+    <ItemGroup>
+        <None Include="../icon.png" Pack="true" PackagePath="\" />
+    </ItemGroup>
+    
+    <ItemGroup>
+      <ProjectReference Include="..\Icecake.Ingest.Streaming\Icecake.Ingest.Streaming.csproj" />
+    </ItemGroup>
+
+    <ItemGroup>
+      <PackageReference Include="Microsoft.Extensions.Configuration.Abstractions" Version="9.0.10" />
+      <PackageReference Include="Microsoft.Extensions.DependencyInjection.Abstractions" Version="9.0.10" />
+      <PackageReference Include="Microsoft.Extensions.Http" Version="9.0.10" />
+      <PackageReference Include="Microsoft.Extensions.Options.ConfigurationExtensions" Version="9.0.10" />
+      <PackageReference Include="Microsoft.Extensions.Options.DataAnnotations" Version="9.0.10" />
+    </ItemGroup>
+
+</Project>

@@ -1,0 +1,21 @@
+{
+  "Snowflake" : {
+    "Account": {
+      "OrganizationName": "",
+      "AccountName": ""
+    },
+    "Credentials": {
+      "User": "",
+      "PrivateKeyPath": ""
+    },
+    "Connect": {
+      "Database": "HELLO_SNOWPIPE",
+      "Schema": "PUBLIC",
+      "Role": "MY_ROLE",
+      "Warehouse": "MY_WH"
+    },
+    "ClientOptions": {
+      
+    }
+  }
+}

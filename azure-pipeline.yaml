@@ -1,0 +1,67 @@
+trigger:
+  branches:
+    include:
+      - main
+      - develop
+
+parameters:
+  - name: publishArtifact
+    displayName: 'Publish NuGet artifacts'
+    type: boolean
+    default: false
+
+pool:
+  vmImage: 'ubuntu-latest'
+
+variables:
+  buildConfiguration: 'Release'
+  solution: '**/*.sln'
+
+  packageVersion: '1.0.0'
+
+  projectsToPack: 'Icecake.Ingest.Streaming/Icecake.Ingest.Streaming.csproj Icecake.Ingest.Streaming.Services/Icecake.Ingest.Streaming.Services.csproj'
+
+  nugetSource: 'https://api.nuget.org/v3/index.json'
+
+steps:
+  - task: UseDotNet@2
+    displayName: 'Install .NET SDK'
+    inputs:
+      packageType: 'sdk'
+      version: '8.0.x'
+      includePreviewVersions: false
+
+  - script: |
+      echo "Listing repo root:"
+      ls -la
+      echo "Listing project folder:"
+      ls -la Icecake.Ingest.Streaming
+      echo "Listing parent folder:"
+      ls -la ..
+    displayName: "Debug: list directories"
+
+  - script: dotnet restore Icecake.Ingest.Streaming.sln
+    displayName: 'Restore'
+
+  - script: dotnet build -c $(buildConfiguration) --no-restore
+    displayName: 'Build'
+
+  - script: |
+      mkdir -p "$(Build.ArtifactStagingDirectory)/nuget"
+      for proj in $(projectsToPack); do
+        echo "Packing $proj with version $(packageVersion)"
+        dotnet pack "$proj" \
+          -c $(buildConfiguration) \
+          -o "$(Build.ArtifactStagingDirectory)/nuget" \
+          /p:PackageVersion=$(packageVersion) \
+          --no-build
+      done
+    displayName: 'Pack NuGet packages'
+
+  - task: PublishBuildArtifacts@1
+    displayName: 'Publish NuGet packages as artifacts'
+    condition: and(succeeded(), eq('${{ parameters.publishArtifact }}', true))
+    inputs:
+      PathtoPublish: '$(Build.ArtifactStagingDirectory)/nuget'
+      ArtifactName: 'nuget-packages'
+      publishLocation: 'Container'
