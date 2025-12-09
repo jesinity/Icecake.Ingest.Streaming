@@ -37,4 +37,37 @@ public sealed class ChannelStatus
 
     [JsonPropertyName("snowflake_avg_processing_latency_ms")]
     public long? SnowflakeAvgProcessingLatencyMs { get; init; }
+    
+    public override string ToString()
+    {
+        var sb = new System.Text.StringBuilder();
+        sb.Append("ChannelStatus { ");
+
+        void Add(string name, object? value)
+        {
+            if (value is null) return;
+            sb.Append(name).Append(" = ").Append(value).Append(", ");
+        }
+
+        Add(nameof(ChannelStatusCode), ChannelStatusCode);
+        Add(nameof(LastCommittedOffsetToken), LastCommittedOffsetToken);
+        Add(nameof(CreatedOnMs), CreatedOnMs);
+        Add(nameof(DatabaseName), DatabaseName);
+        Add(nameof(SchemaName), SchemaName);
+        Add(nameof(PipeName), PipeName);
+        Add(nameof(ChannelName), ChannelName);
+        Add(nameof(RowsInserted), RowsInserted);
+        Add(nameof(RowsParsed), RowsParsed);
+        Add(nameof(RowsErrorCount), RowsErrorCount);
+        Add(nameof(LastErrorOffsetUpperBound), LastErrorOffsetUpperBound);
+        Add(nameof(LastErrorMessage), LastErrorMessage);
+        Add(nameof(LastErrorTimestampMs), LastErrorTimestampMs);
+        Add(nameof(SnowflakeAvgProcessingLatencyMs), SnowflakeAvgProcessingLatencyMs);
+
+        if (sb.Length >= 2 && sb[sb.Length - 2] == ',')
+            sb.Length -= 2;
+
+        sb.Append(" }");
+        return sb.ToString();
+    }
 }

@@ -14,6 +14,28 @@ public sealed class AppendRowsResponse : StreamingIngestResponse
     [JsonPropertyName("next_continuation_token")]
     public required string NextContinuationToken { get; init; }
     
+    public override string ToString()
+    {
+        var sb = new System.Text.StringBuilder();
+        sb.Append("AppendRowsResponse { ");
+
+        // Helper to skip null values
+        void Add(string name, object value)
+        {
+            if (value != null)
+            {
+                sb.Append(name).Append(" = ").Append(value).Append(", ");
+            }
+        }
+
+        Add(nameof(NextContinuationToken), NextContinuationToken);
+
+        if (sb.Length >= 2 && sb[sb.Length - 2] == ',')
+            sb.Length -= 2;
+
+        sb.Append(" }");
+        return sb.ToString();
+    }
 }
 
 

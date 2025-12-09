@@ -16,5 +16,37 @@ public sealed class OpenChannelResponse : StreamingIngestResponse
     public string? NextContinuationToken { get; init; }
 
     [JsonPropertyName("channel_status")] public required ChannelStatus ChannelStatus { get; init; }
+    
+    public override string ToString()
+    {
+        var sb = new System.Text.StringBuilder();
+        sb.Append("OpenChannelResponse { ");
 
+        // Include base class ToString() if meaningful
+        var baseText = base.ToString();
+        if (!string.IsNullOrEmpty(baseText) &&
+            !string.Equals(baseText, nameof(StreamingIngestResponse), System.StringComparison.Ordinal))
+        {
+            sb.Append(baseText).Append(", ");
+        }
+
+        if (NextContinuationToken != null)
+            sb.Append(nameof(NextContinuationToken))
+                .Append(" = ")
+                .Append(NextContinuationToken)
+                .Append(", ");
+
+        if (ChannelStatus != null)
+            sb.Append(nameof(ChannelStatus))
+                .Append(" = ")
+                .Append(ChannelStatus)
+                .Append(", ");
+
+        // Remove trailing ", "
+        if (sb.Length >= 2 && sb[sb.Length - 2] == ',')
+            sb.Length -= 2;
+
+        sb.Append(" }");
+        return sb.ToString();
+    }
 }

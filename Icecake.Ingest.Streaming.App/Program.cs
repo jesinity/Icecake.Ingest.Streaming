@@ -108,6 +108,10 @@ using (var scope = host.Services.CreateScope())
         
     logger.LogInformation("Committed offset: {Offset}", committedOffset ?? "<still null.... nevermind!>");
 
+    // this contains useful stats on the channel status
+    var status = await channel.GetStatusAsync();
+    logger.LogInformation("Channel status: {Status}", status);
+
     await channel.DisposeAsync();
     logger.LogInformation("Closed the channel {ChannelName}", channelName);
     

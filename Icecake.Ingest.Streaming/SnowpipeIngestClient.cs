@@ -331,6 +331,28 @@ var jsonText = await res.Content.ReadAsStringAsync(ct).ConfigureAwait(false);
         }
     }
 
+    /// <summary>
+    /// Retrieves the status of a streaming ingest channel for the specified database, schema, pipe, and channel.
+    /// It uses the v2 path: /v2/streaming/databases/{db}/schemas/{schema}/pipes/{pipe}/channels/{channel}
+    /// </summary>
+    /// <param name="database">
+    /// The name of the database containing the schema and pipe for the channel.
+    /// </param>
+    /// <param name="schema">
+    /// The name of the schema that includes the specified pipe for the channel.
+    /// </param>
+    /// <param name="pipe">
+    /// The name of the pipe that is associated with the specified channel.
+    /// </param>
+    /// <param name="channel">
+    /// The name of the channel whose status is to be retrieved.
+    /// </param>
+    /// <param name="ct">
+    /// A <see cref="CancellationToken"/> used to propagate notifications that the operation should be canceled.
+    /// </param>
+    /// <returns>
+    /// A task that represents the asynchronous operation. The task result contains a <see cref="ChannelStatus"/> instance with the current status of the specified channel.
+    /// </returns>
     public Task<ChannelStatus> GetChannelStatusAsync(
         string database, string schema, string pipe, string channel, CancellationToken ct = default)
     {

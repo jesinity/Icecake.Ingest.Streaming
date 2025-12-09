@@ -8,8 +8,8 @@ namespace Icecake.Ingest.Streaming.Core;
 /// </summary>
 public sealed class FlushPolicy
 {
-    public int MaxRows { get; init; } = 50_000;
-    public int MaxBytes { get; init; } = 4_000_000;
+    public int MaxRows { get; init; } = 10_000;
+    public int MaxBytes { get; init; } = 1_000_000;
     public TimeSpan Interval { get; init; } = TimeSpan.FromSeconds(5);
     public TimeSpan MinHoldAfterAppend { get; init; } = TimeSpan.FromSeconds(10);
 }

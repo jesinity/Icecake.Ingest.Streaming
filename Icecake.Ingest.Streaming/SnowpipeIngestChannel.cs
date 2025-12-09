@@ -1,7 +1,7 @@
 using System.Text;
 using System.Text.Json;
-using Icecake.Ingest.Streaming.Auth;
 using Icecake.Ingest.Streaming.Core;
+using Icecake.Ingest.Streaming.Models;
 using Icecake.Ingest.Streaming.Shims;
 using Microsoft.Extensions.Logging;
 
@@ -11,7 +11,7 @@ namespace Icecake.Ingest.Streaming;
 /// Represents a channel for interacting with Snowpipe for streaming data ingestion.
 /// This class manages the lifecycle and operations of a Snowpipe channel, including data insertion,
 /// offset management, and flushing data to the associated Snowflake table.
-/// It works against the V2 high performance api.
+/// It works against the V2 high-performance api.
 /// </summary>
 public sealed class SnowpipeIngestChannel : IAsyncDisposable, IDisposable
 {
@@ -23,9 +23,13 @@ public sealed class SnowpipeIngestChannel : IAsyncDisposable, IDisposable
     private readonly SnowpipeIngestClient _client;
     private readonly FlushPolicy _policy;
 
+    // Ensures only one FlushAsync runs at a time, even if multiple callers
+    // (timers, InsertRow size trigger, Dispose/Drop) invoke it concurrently.
+    // This protects the continuation token / offset handling and avoids
+    // overlapping network calls for the same Snowpipe channel.
     private readonly SemaphoreSlim _flushGate = new(1, 1);
     private readonly Timer _healthTimer;
-    private readonly TimeSpan _statusInterval = TimeSpan.FromMinutes(5); // tweakable
+    private readonly TimeSpan _statusInterval = TimeSpan.FromMinutes(5);
     private readonly TimeSpan _reopenBackoff = TimeSpan.FromSeconds(2);
     private string? _pendingOffsetToken;
 
@@ -36,8 +40,8 @@ public sealed class SnowpipeIngestChannel : IAsyncDisposable, IDisposable
 
     private readonly Timer _flushTimer;
     
-    private const long DefaultFetchTimeoutTicks = TimeSpan.TicksPerSecond * 10;
-    private const long DefaultFetchPollTicks = TimeSpan.TicksPerMillisecond * 250;
+    private const int DefaultFetchTimeoutSeconds = 10;
+    private const int DefaultFetchPollMilliseconds = 500;
 
     private int _estimatedBytes;
 
@@ -168,7 +172,7 @@ public sealed class SnowpipeIngestChannel : IAsyncDisposable, IDisposable
     {
         if (_state is ChannelState.Dropped or ChannelState.Closed) return;
 
-        // Give Snowflake time to commit last micro-batch
+        // Give Snowflake time to commit the last micro-batch
         var since = DateTimeOffset.UtcNow - _lastAppendUtc;
         var wait = _policy.MinHoldAfterAppend - since;
         if (wait > TimeSpan.Zero)
@@ -242,43 +246,100 @@ public sealed class SnowpipeIngestChannel : IAsyncDisposable, IDisposable
     }
 
 
-    /// <summary>
+/// <summary>
     /// Fetches the latest committed offset for the channel, with a configurable timeout and polling interval.
     /// It may take some time before the offset token gets committed and visible.
+    /// Uses Snowflake's average processing latency to back off polling when the system is under load.
     /// </summary>
-    /// <param name="timeOutSeconds">The maximum time to wait in seconds before the operation times out if no offset is fetched.</param>
-    /// <param name="pollMilliseconds">The interval in milliseconds at which the channel status is polled for the latest offset.</param>
+    /// <param name="timeOutSeconds">
+    /// The maximum time to wait in seconds before the operation times out if no offset is fetched.
+    /// </param>
+    /// <param name="pollMilliseconds">
+    /// The base polling interval in milliseconds. When Snowflake reports high processing latency,
+    /// the effective polling interval is increased to avoid hammering the status endpoint.
+    /// </param>
     /// <param name="ct">A cancellation token to observe while waiting for the operation to complete.</param>
-    /// <returns>A task that represents the asynchronous operation. The task result contains the latest committed offset if available; otherwise, returns null if the operation times out.</returns>
+    /// <returns>
+    /// A task that represents the asynchronous operation. The task result contains the latest committed
+    /// offset if available; otherwise, returns null if the operation times out.
+    /// </returns>
     public async Task<string?> FetchLatestCommittedOffsetAsync(
-        long timeOutSeconds = DefaultFetchTimeoutTicks,
-        long pollMilliseconds = DefaultFetchPollTicks,
+        int timeOutSeconds = DefaultFetchTimeoutSeconds,
+        int pollMilliseconds = DefaultFetchPollMilliseconds,
         CancellationToken ct = default)
     {
         var sw = System.Diagnostics.Stopwatch.StartNew();
         string? last = null;
-        
+
         var timeout = TimeSpan.FromSeconds(timeOutSeconds);
-        var pollInterval = TimeSpan.FromMilliseconds(pollMilliseconds);
+        var basePollInterval = TimeSpan.FromMilliseconds(pollMilliseconds);
 
         while (sw.Elapsed < timeout)
         {
-            var status = await _client.GetChannelStatusAsync(
-                database: _tableSchema.SchemaObject.Database,
-                schema: _tableSchema.SchemaObject.Schema,
-                pipe: _pipeName,
-                channel: _channelName,
-                ct: ct);
+            var status = await GetStatusAsync(ct).ConfigureAwait(false);
 
             last = status.LastCommittedOffsetToken;
             if (!string.IsNullOrEmpty(last))
                 return last;
 
-            // (Optional) also check rows_inserted/rows_parsed to see progress
-            await Task.Delay(pollInterval, ct).ConfigureAwait(false);
+            // --- Adaptive polling based on SnowflakeAvgProcessingLatencyMs --------------------
+            //
+            // Idea:
+            //   • Never poll faster than basePollInterval (e.g. 250 ms).
+            //   • If Snowflake reports a high average processing latency, we back off.
+            //   • We use roughly latency / 4 as an upper bound for how often we re-check,
+            //     so an 8s processing latency becomes ~2s polling instead of 250ms spam.
+            //
+            TimeSpan nextDelay = basePollInterval;
+
+            var avgLatencyMs = status.SnowflakeAvgProcessingLatencyMs;
+            if (avgLatencyMs.HasValue && avgLatencyMs.Value > 0)
+            {
+                // start from a fraction of the processing latency
+                var adaptiveMs = avgLatencyMs.Value / 4.0;
+
+                // never go below the base poll interval
+                if (adaptiveMs < basePollInterval.TotalMilliseconds)
+                    adaptiveMs = basePollInterval.TotalMilliseconds;
+
+                // also don't make a single delay so big that we obviously overshoot the timeout
+                // (cap at, say, 1/2 of remaining time)
+                var remaining = timeout - sw.Elapsed;
+                var maxMs = remaining.TotalMilliseconds / 2.0;
+                if (adaptiveMs > maxMs && maxMs > 0)
+                    adaptiveMs = maxMs;
+
+                nextDelay = TimeSpan.FromMilliseconds(adaptiveMs);
+            }
+
+            // Final safety: if we’re basically out of time, break instead of negative/zero delays
+            var remainingTime = timeout - sw.Elapsed;
+            if (remainingTime <= TimeSpan.Zero)
+                break;
+
+            if (nextDelay > remainingTime)
+                nextDelay = remainingTime;
+
+            await Task.Delay(nextDelay, ct).ConfigureAwait(false);
         }
 
-        return last; // may still be null if it timed out
+        // may still be null if it timed out
+        return last;
+    }
+
+    /// <summary>
+    /// Retrieves the current status of the ingestion channel, including any relevant state information.
+    /// </summary>
+    /// <param name="ct">A token to monitor for cancellation requests.</param>
+    /// <returns>A task that represents the asynchronous operation. The task result contains the current <see cref="ChannelStatus"/> of the channel.</returns>
+    public async Task<ChannelStatus> GetStatusAsync(CancellationToken ct = default)
+    {
+        return await _client.GetChannelStatusAsync(
+            database: _tableSchema.SchemaObject.Database,
+            schema: _tableSchema.SchemaObject.Schema,
+            pipe: _pipeName,
+            channel: _channelName,
+            ct: ct).ConfigureAwait(false);
     }
 
     /// <summary>
@@ -295,15 +356,42 @@ public sealed class SnowpipeIngestChannel : IAsyncDisposable, IDisposable
         EnsureOpen();
 
         List<Dictionary<string, object?>> batch;
+        
         lock (_lock)
         {
             if (_buffer.Count == 0) return;
-            batch = _buffer; // reuse list object (see double-buffer trick below)
+            
+            // ┌────────────────────────────────────────────────────────────┐
+            // │ Double-buffer trick:                                       │
+            // │                                                             │
+            // │ 1. We  swap the producer buffer (_buffer) with a fresh    │
+            // │    list (or a recycled one).                               │
+            // │ 2. The old list becomes "batch", a private snapshot for    │
+            // │    this flush operation.                                   │
+            // │                                                             │
+            // │ Why do we do this?                                         │
+            // │ -------------------                                         │
+            // │ • Flushing involves slow operations (JSON serialization,   │
+            // │   network I/O). We must not hold the lock during that.     │
+            // │                                                             │
+            // │ • If we flushed the same list producers are writing to,    │
+            // │   we would have concurrent read/write on List<T>, which    │
+            // │   is NOT thread-safe and would corrupt the batch.          │
+            // │                                                             │
+            // │ • By swapping lists, producers immediately get an empty    │
+            // │   list to continue writing into, while we safely flush the │
+            // │   old one without holding the lock.                        │
+            // │                                                             │
+            // │ • _spareBuffer lets us reuse a cleared list to reduce GC   │
+            // │   pressure ( micro-optimization).                          │
+            // └────────────────────────────────────────────────────────────┘
+            batch = _buffer; 
             _buffer = _spareBuffer ?? new List<Dictionary<string, object?>>(batch.Count);
             _spareBuffer = null;
             _estimatedBytes = 0;
         }
 
+        // Serialize flushes: avoid overlapping appends for this channel.
         await _flushGate.WaitAsync(ct).ConfigureAwait(false);
 
         var chunk = _builder.Build(_channelName, batch, offsetToken);
@@ -357,7 +445,14 @@ public sealed class SnowpipeIngestChannel : IAsyncDisposable, IDisposable
         }
         finally
         {
-            // recycle list to reduce GC
+            // ┌──────────────────────────────────────────────────┐
+            // │ After flushing, we clear the batch and store it  │
+            // │ in _spareBuffer so it can be reused on the next  │
+            // │ swap — avoids allocating a new large List<T>.    │
+            // │                                                  │
+            // │ NOTE: This does NOT leak rows because 'batch' is │
+            // │ never touched by producers; it's a private copy. │
+            // └──────────────────────────────────────────────────┘
             batch.Clear();
             _spareBuffer ??= batch;
             _flushGate.Release();
@@ -427,21 +522,16 @@ public sealed class SnowpipeIngestChannel : IAsyncDisposable, IDisposable
             return;
         }
 
-        var status = await _client.GetChannelStatusAsync(
-            _tableSchema.SchemaObject.Database,
-            _tableSchema.SchemaObject.Schema,
-            _pipeName,
-            _channelName,
-            ct).ConfigureAwait(false);
+        var status = await GetStatusAsync(ct).ConfigureAwait(false);
 
-        // refresh latest committed offset for external resume
+        // refresh the latest committed offset for external resume
         if (!string.IsNullOrEmpty(status.LastCommittedOffsetToken))
         {
             _latestCommittedOffsetToken = status.LastCommittedOffsetToken;
             _logger.LogInformation("Latest committed offset token: {token}", _latestCommittedOffsetToken);
         }
 
-        // if channel went unhealthy/closed server-side, attempt a transparent reopen
+        // if a channel went unhealthy/closed server-side, attempt a transparent reopen
         if (!string.Equals(status.ChannelStatusCode, "SUCCESS", StringComparison.OrdinalIgnoreCase))
         {
             _state = ChannelState.Error;

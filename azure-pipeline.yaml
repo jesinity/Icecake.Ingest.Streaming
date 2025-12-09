@@ -12,24 +12,36 @@ parameters:
 
 pool:
   vmImage: 'ubuntu-latest'
-
+  
+  
 variables:
-  buildConfiguration: 'Release'
-  solution: '**/*.sln'
+  # Exposes $(ApiKey) from the variable group
+  - group: NugetCoords
 
-  packageVersion: '1.0.0'
+  - name: buildConfiguration
+    value: 'Release'
 
-  projectsToPack: 'Icecake.Ingest.Streaming/Icecake.Ingest.Streaming.csproj Icecake.Ingest.Streaming.Services/Icecake.Ingest.Streaming.Services.csproj'
+  - name: solution
+    value: '**/*.sln'
 
-  nugetSource: 'https://api.nuget.org/v3/index.json'
+  - name: packageVersion
+    value: '1.1.0'
 
+  - name: projectsToPack
+    value: 'Icecake.Ingest.Streaming/Icecake.Ingest.Streaming.csproj Icecake.Ingest.Streaming.Services/Icecake.Ingest.Streaming.Services.csproj'
+
+  - name: nugetSource
+    value: 'https://api.nuget.org/v3/index.json'
+    
 steps:
   - task: UseDotNet@2
     displayName: 'Install .NET SDK'
+    
     inputs:
       packageType: 'sdk'
       version: '8.0.x'
       includePreviewVersions: false
+       
 
   - script: |
       echo "Listing repo root:"
@@ -65,3 +77,11 @@ steps:
       PathtoPublish: '$(Build.ArtifactStagingDirectory)/nuget'
       ArtifactName: 'nuget-packages'
       publishLocation: 'Container'
+  - script: |
+      echo "Pushing NuGet packages to nuget.org..."
+      dotnet nuget push "$(Build.ArtifactStagingDirectory)/nuget/*.nupkg" \
+        --api-key $(ApiKey) \
+        --source $(nugetSource) \
+        --skip-duplicate
+    displayName: "Publish NuGet packages"
+    condition: and(succeeded(), eq('${{ parameters.publishArtifact }}', true))

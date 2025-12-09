@@ -15,4 +15,29 @@ public sealed class DeleteChannelResponse : StreamingIngestResponse
     // Optional on some deployments
     [JsonPropertyName("channel_status")]
     public ChannelStatus? ChannelStatus { get; init; }
+    
+    public override string ToString()
+    {
+        var sb = new System.Text.StringBuilder();
+        sb.Append("DeleteChannelResponse { ");
+        
+        var baseText = base.ToString();
+        if (!string.IsNullOrEmpty(baseText) &&
+            !string.Equals(baseText, nameof(StreamingIngestResponse), StringComparison.Ordinal))
+        {
+            sb.Append(baseText).Append(", ");
+        }
+
+        if (ChannelStatus != null)
+        {
+            sb.Append(nameof(ChannelStatus)).Append(" = ").Append(ChannelStatus).Append(", ");
+        }
+
+        // Trim trailing ", "
+        if (sb.Length >= 2 && sb[sb.Length - 2] == ',')
+            sb.Length -= 2;
+
+        sb.Append(" }");
+        return sb.ToString();
+    }
 }

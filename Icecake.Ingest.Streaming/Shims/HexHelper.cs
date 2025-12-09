@@ -5,6 +5,13 @@ namespace Icecake.Ingest.Streaming.Shims;
 /// </summary>
 internal static class HexHelper
 {
+    /// <summary>
+    /// Converts a hexadecimal string to a byte array.
+    /// </summary>
+    /// <param name="hex">A string containing hexadecimal digits. Must have an even length.</param>
+    /// <returns>A byte array representing the input hexadecimal string.</returns>
+    /// <exception cref="ArgumentNullException">Thrown when the input string is null.</exception>
+    /// <exception cref="FormatException">Thrown when the input string is not a valid hexadecimal string or has an odd length.</exception>
     public static byte[] FromHexString(string hex)
     {
         if (hex is null)

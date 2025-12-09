@@ -3,12 +3,15 @@
 </p>
 
 # Icecake.Ingest.Streaming
+
 **Unofficial C# client for Snowflake Snowpipe Streaming (V2)**
 
 `Icecake.Ingest.Streaming` is a lightweight, high-performance C# library for sending data to **Snowflake Snowpipe Streaming V2**.
 
-This project is **not affiliated with Snowflake Inc.**, is **not an official SDK**, and is **not endorsed or supported by Snowflake**.  
-It uses *only* Snowflake’s **publicly documented APIs** and intentionally mirrors the conceptual structure of Snowflake’s Java/Python Streaming SDKs (`Client` + `Channel`), while offering an idiomatic C# implementation.
+This project is **not affiliated with Snowflake Inc.**, is **not an official SDK**, and is **not endorsed or supported by Snowflake**.
+
+The library is based on the ingestion behaviour exposed through Snowflake’s official client ecosystem (notably the Java/Python SDKs). Although the raw HTTP endpoints are not formally documented (such as with an OpenAPI spec), their structure and semantics are visible through Snowflake’s publicly distributed client libraries.
+Icecake library intentionally mirrors the conceptual structure of Snowflake’s Java/Python Streaming SDKs (`Client` + `Channel`), while offering an idiomatic C# implementation.
 
 The main abstractions are:
 
@@ -17,26 +20,27 @@ The main abstractions are:
 
 These map closely to Snowflake’s own ingestion clients in their official language SDKs.
 
-> ⚠️ **Disclaimer**  
-> This library is community-maintained.  
+> ⚠️ **Disclaimer**
+> This library is community-maintained.
 > API compatibility with Snowflake may require updates as Snowflake evolves their services.
 
 ---
 
 ## ✨ Features
 
-- ✔ Fully supports **Snowpipe Streaming V2 ingestion**
+- ✔ Fully supports **Snowpipe Streaming V2 ingestion endpoint**
 - ✔ Async batching and ingestion
 - ✔ Automatic:
   - Chunk creation
   - GZIP compression
   - MD5 checksumming
-- ✔ RSA key-pair authentication (PKCS#1 / PKCS#8 — encrypted or unencrypted)
+- ✔ RSA key-pair authentication
 - ✔ Offset token support for resumable ingestion
 - ✔ Multi-target builds:
   - `.NET 8.0` — full capability
   - `netstandard2.0` — maximum compatibility with polyfills
-- ✔ Dependency-light, efficient, production-friendly
+- ✔ Dependency-light, efficient.
+- ✔ Provides DI extensions.
 
 ---
 
@@ -44,7 +48,7 @@ These map closely to Snowflake’s own ingestion clients in their official langu
 
 ### **Icecake.Ingest.Streaming**
 
-Core ingestion client:
+Core ingestion client and abstractions:
 
 ```
 dotnet add package Icecake.Ingest.Streaming
@@ -63,7 +67,6 @@ dotnet add package Icecake.Ingest.Streaming.Services
 ## 🚀 Example Usage with Dependency Injection
 
 ### ⚙️ Example `appsettings.jsonc`
-
 
 ```jsonc
 {
@@ -268,7 +271,7 @@ This library supports:
 
 - RSA key-pair authentication
 - PKCS#1 and PKCS#8 (encrypted or plaintext)
-- Automatic computation of Snowflake’s fingerprint format:  
+- Automatic computation of Snowflake’s fingerprint format:
   **`SHA256:<Base64Digest>`**
 - Uses **BouncyCastle** for compatibility on `netstandard2.0`
 
@@ -287,7 +290,7 @@ To restate:
 
 ## 🤝 Contributing
 
-Issues and PRs are welcome.  
+Issues and PRs are welcome.
 If Snowflake updates their streaming API, please open an issue so we can track compatibility.
 
 ---
